@@ -1,8 +1,7 @@
 ﻿using System;
 using static WeakEvent.WeakEventSourceHelper;
 
-namespace WeakEvent
-{
+namespace WeakEvent {
     /// <summary>
     /// An event with weak subscription, i.e. it won't keep handlers from being garbage collected.
     /// </summary>
@@ -20,11 +19,9 @@ namespace WeakEvent
         /// <param name="sender">The source of the event.</param>
         /// <param name="args">An object that contains the event data.</param>
         /// <remarks>The handlers are invoked one after the other, in the order they were subscribed in.</remarks>
-        public void Raise(object? sender, TEventArgs args)
-        {
+        public void Raise(object? sender, TEventArgs args) {
             var validHandlers = GetValidHandlers(_handlers);
-            foreach (var handler in validHandlers)
-            {
+            foreach(var handler in validHandlers) {
                 handler.Invoke(sender, args);
             }
         }
@@ -38,18 +35,14 @@ namespace WeakEvent
         /// <param name="exceptionHandler">A delegate that handles exceptions thrown by individual handlers.
         /// Return <c>true</c> to indicate that the exception was handled.</param>
         /// <remarks>The handlers are invoked one after the other, in the order they were subscribed in.</remarks>
-        public void Raise(object? sender, TEventArgs args, Func<Exception, bool> exceptionHandler)
-        {
-            if (exceptionHandler is null) throw new ArgumentNullException(nameof(exceptionHandler));
+        public void Raise(object? sender, TEventArgs args, Func<Exception, bool> exceptionHandler) {
+            if(exceptionHandler is null) throw new ArgumentNullException(nameof(exceptionHandler));
             var validHandlers = GetValidHandlers(_handlers);
-            foreach (var handler in validHandlers)
-            {
-                try
-                {
+            foreach(var handler in validHandlers) {
+                try {
                     handler.Invoke(sender, args);
                 }
-                catch (Exception ex) when (exceptionHandler(ex))
-                {
+                catch(Exception ex) when(exceptionHandler(ex)) {
                 }
             }
         }
@@ -59,8 +52,7 @@ namespace WeakEvent
         /// </summary>
         /// <param name="handler">The handler to subscribe.</param>
         /// <remarks>Only a weak reference to the handler's <c>Target</c> is kept, so that it can be garbage collected.</remarks>
-        public void Subscribe(EventHandler<TEventArgs> handler)
-        {
+        public void Subscribe(EventHandler<TEventArgs> handler) {
             Subscribe(null, handler);
         }
 
@@ -72,8 +64,7 @@ namespace WeakEvent
         /// <remarks>Only a weak reference to the handler's <c>Target</c> is kept, so that it can be garbage collected.
         /// However, as long as the <c>lifetime</c> object is alive, the handler will be kept alive. This is useful for
         /// subscribing with anonymous methods (e.g. lambda expressions).</remarks>
-        public void Subscribe(object? lifetimeObject, EventHandler<TEventArgs> handler)
-        {
+        public void Subscribe(object? lifetimeObject, EventHandler<TEventArgs> handler) {
             Subscribe<DelegateCollection, OpenEventHandler, StrongHandler>(lifetimeObject, ref _handlers, handler);
         }
 
@@ -83,8 +74,7 @@ namespace WeakEvent
         /// <param name="handler">The handler to unsubscribe.</param>
         /// <remarks>The behavior is the same as that of <see cref="Delegate.Remove(Delegate, Delegate)"/>. Only the last instance
         /// of the handler's invocation list is removed. If the exact invocation list is not found, nothing is removed.</remarks>
-        public void Unsubscribe(EventHandler<TEventArgs> handler)
-        {
+        public void Unsubscribe(EventHandler<TEventArgs> handler) {
             Unsubscribe<OpenEventHandler, StrongHandler>(_handlers, handler);
         }
 
@@ -96,35 +86,29 @@ namespace WeakEvent
         /// <remarks>The behavior is the same as that of <see cref="Delegate.Remove(Delegate, Delegate)"/>. Only the last instance
         /// of the handler's invocation list is removed. If the exact invocation list is not found, nothing is removed.</remarks>
         [Obsolete("This method is obsolete and will be removed in a future version. Use the Unsubscribe overload that doesn't take a lifetime object instead.")]
-        public void Unsubscribe(object? lifetimeObject, EventHandler<TEventArgs> handler)
-        {
+        public void Unsubscribe(object? lifetimeObject, EventHandler<TEventArgs> handler) {
             Unsubscribe(handler);
         }
 
         internal delegate void OpenEventHandler(object? target, object? sender, TEventArgs e);
 
-        internal struct StrongHandler
-        {
+        internal struct StrongHandler {
             private readonly object? _target;
             private readonly OpenEventHandler _openHandler;
 
-            public StrongHandler(object? target, OpenEventHandler openHandler)
-            {
+            public StrongHandler(object? target, OpenEventHandler openHandler) {
                 _target = target;
                 _openHandler = openHandler;
             }
 
-            public void Invoke(object? sender, TEventArgs e)
-            {
+            public void Invoke(object? sender, TEventArgs e) {
                 _openHandler(_target, sender, e);
             }
         }
 
-        internal class DelegateCollection : DelegateCollectionBase<OpenEventHandler, StrongHandler>
-        {
+        internal class DelegateCollection : DelegateCollectionBase<OpenEventHandler, StrongHandler> {
             public DelegateCollection()
-                : base((target, openHandler) => new StrongHandler(target, openHandler))
-            {
+                : base((target, openHandler) => new StrongHandler(target, openHandler)) {
             }
         }
     }
